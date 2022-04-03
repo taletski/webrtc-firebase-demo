@@ -3,9 +3,11 @@ import './style.css';
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 
-const firebaseConfig = {
-  // your config
-};
+const firebaseConfigString = import.meta.env.VITE_FIREBASE_CONFIG;
+if (!firebaseConfigString)
+  throw new Error(`VITE_FIREBASE_CONFIG env variable is not defined`);
+
+const firebaseConfig = JSON.parse(firebaseConfigString);
 
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
@@ -15,10 +17,10 @@ const firestore = firebase.firestore();
 const servers = {
   iceServers: [
     {
-      urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302'],
-    },
+      urls: ['stun:stun1.l.google.com:19302', 'stun:stun2.l.google.com:19302']
+    }
   ],
-  iceCandidatePoolSize: 10,
+  iceCandidatePoolSize: 10
 };
 
 // Global State
@@ -38,7 +40,10 @@ const hangupButton = document.getElementById('hangupButton');
 // 1. Setup media sources
 
 webcamButton.onclick = async () => {
-  localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  localStream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true
+  });
   remoteStream = new MediaStream();
 
   // Push tracks from local stream to peer connection
@@ -81,7 +86,7 @@ callButton.onclick = async () => {
 
   const offer = {
     sdp: offerDescription.sdp,
-    type: offerDescription.type,
+    type: offerDescription.type
   };
 
   await callDoc.set({ offer });
@@ -99,6 +104,7 @@ callButton.onclick = async () => {
   answerCandidates.onSnapshot((snapshot) => {
     snapshot.docChanges().forEach((change) => {
       if (change.type === 'added') {
+        console.log('Call is answered');
         const candidate = new RTCIceCandidate(change.doc.data());
         pc.addIceCandidate(candidate);
       }
