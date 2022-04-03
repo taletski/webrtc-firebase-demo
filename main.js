@@ -1,5 +1,16 @@
 import './style.css';
 
+import data from './BanubaSDK/BanubaSDK.data?url';
+import wasm from './BanubaSDK/BanubaSDK.wasm?url';
+import simd from './BanubaSDK/BanubaSDK.simd.wasm?url';
+import {
+  Player,
+  Effect,
+  Dom,
+  MediaStream as BnbMediaStream,
+  MediaStreamCapture
+} from './BanubaSDK/BanubaSDK.js';
+
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 
@@ -25,7 +36,14 @@ const servers = {
 
 // Global State
 const pc = new RTCPeerConnection(servers);
-let localStream = null;
+let localStreamEditor = await Player.create({
+  clientToken: import.meta.env.VITE_BANUBA_TOKEN,
+  locateFile: {
+    'BanubaSDK.data': data,
+    'BanubaSDK.wasm': wasm,
+    'BanubaSDK.simd.wasm': simd
+  }
+});
 let remoteStream = null;
 
 // HTML elements
@@ -40,11 +58,19 @@ const hangupButton = document.getElementById('hangupButton');
 // 1. Setup media sources
 
 webcamButton.onclick = async () => {
-  localStream = await navigator.mediaDevices.getUserMedia({
+  const webcamStream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true
   });
+
+  await localStreamEditor.use(new BnbMediaStream(webcamStream));
+  await localStreamEditor.applyEffect(
+    new Effect('./BanubaSDK/effects/test_BG.zip')
+  );
+  await localStreamEditor.play();
+
   remoteStream = new MediaStream();
+  const localStream = new MediaStreamCapture(localStreamEditor);
 
   // Push tracks from local stream to peer connection
   localStream.getTracks().forEach((track) => {
@@ -58,13 +84,38 @@ webcamButton.onclick = async () => {
     });
   };
 
-  webcamVideo.srcObject = localStream;
+  // webcamVideo.srcObject = localStream;
+  webcamVideo.srcObject = new MediaStream(localStream);
   remoteVideo.srcObject = remoteStream;
+  // Dom.render(localStreamEditor, webcamVideo);
+
+  //  /**
+  //  * A hacky way to capture local video stream from Banuba player.
+  //  *
+  //  * The stream captured using `new MediaStreamCapture()` did not
+  //  * play when set to `HTMLMediaElement.srcObject`
+  //  *
+  //  * Explanation: it didn't play because I did not run `localStreamEditor.play()`
+  //  **/
+  // let localStream = webcamVideo.firstElementChild.captureStream(30);
+
+  // // Push tracks from local stream to peer connection
+  // localStream.getTracks().forEach((track) => {
+  //   debugger;
+  //   pc.addTrack(track, localStream);
+  // });
+
+  // // Pull tracks from remote stream, add to video stream
+  // pc.ontrack = (event) => {
+  //   event.streams[0].getTracks().forEach((track) => {
+  //     remoteStream.addTrack(track);
+  //   });
+  // };
 
   callButton.disabled = false;
   answerButton.disabled = false;
   webcamButton.disabled = true;
-};
+};;;
 
 // 2. Create an offer
 callButton.onclick = async () => {
