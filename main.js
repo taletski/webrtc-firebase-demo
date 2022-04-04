@@ -6,7 +6,6 @@ import simd from './BanubaSDK/BanubaSDK.simd.wasm?url';
 import {
   Player,
   Effect,
-  Dom,
   MediaStream as BnbMediaStream,
   MediaStreamCapture
 } from './BanubaSDK/BanubaSDK.js';
@@ -36,14 +35,7 @@ const servers = {
 
 // Global State
 const pc = new RTCPeerConnection(servers);
-let playerPromise = Player.create({
-  clientToken: import.meta.env.VITE_BANUBA_TOKEN,
-  locateFile: {
-    'BanubaSDK.data': data,
-    'BanubaSDK.wasm': wasm,
-    'BanubaSDK.simd.wasm': simd
-  }
-});
+let localStreamEditor = null;
 let remoteStream = null;
 
 // HTML elements
@@ -75,8 +67,7 @@ const createEffectApplicator = (effectName) => () => {
   }
 
   if (!appliedEffects.has(effectName)) {
-    debugger;
-    localStreamEditor.applyEffect(effect);
+    localStreamEditor?.applyEffect?.(effect);
     appliedEffects.add(effectName);
   }
 };
@@ -86,16 +77,21 @@ blurButton.onclick = createEffectApplicator('sceneRetouch');
 // 1. Setup media sources
 
 webcamButton.onclick = async () => {
-  const localStreamEditor = await playerPromise;
+  localStreamEditor = await Player.create({
+    clientToken: import.meta.env.VITE_BANUBA_TOKEN,
+    locateFile: {
+      'BanubaSDK.data': data,
+      'BanubaSDK.wasm': wasm,
+      'BanubaSDK.simd.wasm': simd
+    }
+  });
+
   const webcamStream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true
   });
 
   await localStreamEditor.use(new BnbMediaStream(webcamStream));
-  await localStreamEditor.applyEffect(
-    new Effect('./BanubaSDK/effects/test_BG.zip')
-  );
   await localStreamEditor.play();
 
   remoteStream = new MediaStream();
@@ -120,7 +116,7 @@ webcamButton.onclick = async () => {
   answerButton.disabled = false;
   webcamButton.disabled = true;
   blurButton.disabled = false;
-};;;
+};
 
 // 2. Create an offer
 callButton.onclick = async () => {
