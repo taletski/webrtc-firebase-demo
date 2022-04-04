@@ -6,3 +6,4 @@ dist-ssr
 
 # Banuba JS SDK
 BanubaSDK/*
+.vercel
