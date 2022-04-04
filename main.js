@@ -7,7 +7,9 @@ import {
   Player,
   Effect,
   MediaStream as BnbMediaStream,
-  MediaStreamCapture
+  MediaStreamCapture,
+  Dom,
+  Webcam
 } from './BanubaSDK/BanubaSDK.js';
 
 import firebase from 'firebase/app';
@@ -50,8 +52,8 @@ const hangupButton = document.getElementById('hangupButton');
 
 // 0. Setup effects controls
 const effectsCatalog = {
-  sceneRetouch: new Effect('./BanubaSDK/effects/scene_retouch.zip'),
-  backgroundBlur: new Effect('./BanubaSDK/effects/test_BG.zip')
+  sceneRetouch: new Effect('/BanubaSDK/effects/scene_retouch.zip'),
+  background: new Effect('./BanubaSDK/effects/test_BG.zip')
 };
 const appliedEffects = new Set();
 
@@ -91,8 +93,10 @@ webcamButton.onclick = async () => {
     audio: true
   });
 
-  await localStreamEditor.use(new BnbMediaStream(webcamStream));
-  await localStreamEditor.play();
+  localStreamEditor.use(new BnbMediaStream(webcamStream));
+  // localStreamEditor.use(new Webcam());
+  // localStreamEditor.applyEffect(effectsCatalog.sceneRetouch);
+  localStreamEditor.play();
 
   remoteStream = new MediaStream();
   const localStream = new MediaStreamCapture(localStreamEditor);
@@ -110,6 +114,7 @@ webcamButton.onclick = async () => {
   };
 
   webcamVideo.srcObject = localStream;
+  // Dom.render(localStreamEditor, document.getElementById('webcamVideo'));
   remoteVideo.srcObject = remoteStream;
 
   callButton.disabled = false;
