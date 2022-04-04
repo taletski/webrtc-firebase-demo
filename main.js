@@ -36,7 +36,7 @@ const servers = {
 
 // Global State
 const pc = new RTCPeerConnection(servers);
-let localStreamEditor = await Player.create({
+let playerPromise = Player.create({
   clientToken: import.meta.env.VITE_BANUBA_TOKEN,
   locateFile: {
     'BanubaSDK.data': data,
@@ -86,6 +86,7 @@ blurButton.onclick = createEffectApplicator('sceneRetouch');
 // 1. Setup media sources
 
 webcamButton.onclick = async () => {
+  const localStreamEditor = await playerPromise;
   const webcamStream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true
