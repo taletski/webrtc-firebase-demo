@@ -49,11 +49,39 @@ let remoteStream = null;
 // HTML elements
 const webcamButton = document.getElementById('webcamButton');
 const webcamVideo = document.getElementById('webcamVideo');
+const blurButton = document.getElementById('blurButton');
 const callButton = document.getElementById('callButton');
 const callInput = document.getElementById('callInput');
 const answerButton = document.getElementById('answerButton');
 const remoteVideo = document.getElementById('remoteVideo');
 const hangupButton = document.getElementById('hangupButton');
+
+// 0. Setup effects controls
+const effectsCatalog = {
+  sceneRetouch: new Effect('./BanubaSDK/effects/scene_retouch.zip'),
+  backgroundBlur: new Effect('./BanubaSDK/effects/test_BG.zip')
+};
+const appliedEffects = new Set();
+
+const createEffectApplicator = (effectName) => () => {
+  const effect = effectsCatalog[effectName];
+  if (!effect) {
+    console.warn(
+      `Attempted to apply non-existing effect ${effectName}. Available effects: ${Object.keys(
+        effectsCatalog
+      )}`
+    );
+    return;
+  }
+
+  if (!appliedEffects.has(effectName)) {
+    debugger;
+    localStreamEditor.applyEffect(effect);
+    appliedEffects.add(effectName);
+  }
+};
+
+blurButton.onclick = createEffectApplicator('sceneRetouch');
 
 // 1. Setup media sources
 
@@ -84,37 +112,13 @@ webcamButton.onclick = async () => {
     });
   };
 
-  // webcamVideo.srcObject = localStream;
-  webcamVideo.srcObject = new MediaStream(localStream);
+  webcamVideo.srcObject = localStream;
   remoteVideo.srcObject = remoteStream;
-  // Dom.render(localStreamEditor, webcamVideo);
-
-  //  /**
-  //  * A hacky way to capture local video stream from Banuba player.
-  //  *
-  //  * The stream captured using `new MediaStreamCapture()` did not
-  //  * play when set to `HTMLMediaElement.srcObject`
-  //  *
-  //  * Explanation: it didn't play because I did not run `localStreamEditor.play()`
-  //  **/
-  // let localStream = webcamVideo.firstElementChild.captureStream(30);
-
-  // // Push tracks from local stream to peer connection
-  // localStream.getTracks().forEach((track) => {
-  //   debugger;
-  //   pc.addTrack(track, localStream);
-  // });
-
-  // // Pull tracks from remote stream, add to video stream
-  // pc.ontrack = (event) => {
-  //   event.streams[0].getTracks().forEach((track) => {
-  //     remoteStream.addTrack(track);
-  //   });
-  // };
 
   callButton.disabled = false;
   answerButton.disabled = false;
   webcamButton.disabled = true;
+  blurButton.disabled = false;
 };;;
 
 // 2. Create an offer
