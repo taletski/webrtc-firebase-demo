@@ -53,11 +53,11 @@ const hangupButton = document.getElementById('hangupButton');
 // 0. Setup effects controls
 const effectsCatalog = {
   sceneRetouch: new Effect('/BanubaSDK/effects/scene_retouch.zip'),
-  background: new Effect('./BanubaSDK/effects/test_BG.zip')
+  blurBackground: new Effect('./BanubaSDK/effects/blur_bg.zip')
 };
 const appliedEffects = new Set();
 
-const createEffectApplicator = (effectName) => () => {
+const createEffectApplicator = (effectName) => async () => {
   const effect = effectsCatalog[effectName];
   if (!effect) {
     console.warn(
@@ -69,16 +69,16 @@ const createEffectApplicator = (effectName) => () => {
   }
 
   if (!appliedEffects.has(effectName)) {
-    localStreamEditor?.applyEffect?.(effect);
+    await localStreamEditor?.applyEffect?.(effect);
     appliedEffects.add(effectName);
   }
 };
 
-blurButton.onclick = createEffectApplicator('sceneRetouch');
+blurButton.onclick = createEffectApplicator('blurBackground');
 
 // 1. Setup media sources
 
-webcamButton.onclick = async () => {
+const startWebcam = async () => {
   localStreamEditor = await Player.create({
     clientToken: import.meta.env.VITE_BANUBA_TOKEN,
     locateFile: {
@@ -94,8 +94,6 @@ webcamButton.onclick = async () => {
   });
 
   localStreamEditor.use(new BnbMediaStream(webcamStream));
-  // localStreamEditor.use(new Webcam());
-  // localStreamEditor.applyEffect(effectsCatalog.sceneRetouch);
   localStreamEditor.play();
 
   remoteStream = new MediaStream();
@@ -114,7 +112,6 @@ webcamButton.onclick = async () => {
   };
 
   webcamVideo.srcObject = localStream;
-  // Dom.render(localStreamEditor, document.getElementById('webcamVideo'));
   remoteVideo.srcObject = remoteStream;
 
   callButton.disabled = false;
@@ -122,6 +119,14 @@ webcamButton.onclick = async () => {
   webcamButton.disabled = true;
   blurButton.disabled = false;
 };
+
+try {
+  startWebcam();
+} catch (error) {
+  console.error(`Failed to start a webcam: ${error}`);
+}
+
+webcamButton.onclick = startWebcam;
 
 // 2. Create an offer
 callButton.onclick = async () => {
