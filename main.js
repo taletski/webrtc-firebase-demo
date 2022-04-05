@@ -120,12 +120,6 @@ const startWebcam = async () => {
   blurButton.disabled = false;
 };
 
-try {
-  startWebcam();
-} catch (error) {
-  console.error(`Failed to start a webcam: ${error}`);
-}
-
 webcamButton.onclick = startWebcam;
 
 // 2. Create an offer
